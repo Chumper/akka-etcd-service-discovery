@@ -1,0 +1,1 @@
+# akka-etcd-service-discovery
