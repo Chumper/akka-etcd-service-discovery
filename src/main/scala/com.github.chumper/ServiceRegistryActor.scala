@@ -1,6 +1,5 @@
 package com.github.chumper
 
-import akka.actor.{Actor, Props}
 import io.grpc.stub.AbstractStub
 
 /**
