@@ -7,3 +7,5 @@ resolvers += "Akka Snapshot Repository" at "http://repo.akka.io/snapshots/"
 
 libraryDependencies += "com.typesafe.akka" %% "akka-actor" % "2.4.14"
 libraryDependencies += "com.github.Chumper" % "etcd3-scala" % "master-SNAPSHOT"
+
+libraryDependencies += "com.typesafe.scala-logging" %% "scala-logging" % "3.5.0"

@@ -1,24 +1,46 @@
 package com.github.chumper.actor
 
+import java.net.InetAddress
+
 import akka.actor.{Actor, Cancellable, Props}
 import com.github.chumper.actor.ServiceRegistryActor.UpdateLease
 import com.github.chumper.etcd.Etcd
-import com.trueaccord.scalapb.grpc.{AbstractService, ServiceCompanion}
-import io.grpc.stub.AbstractStub
 
+import scala.concurrent.Await
 import scala.concurrent.duration.DurationDouble
+import scala.language.postfixOps
 
 /**
   * Will hold a up to date list of requested services if they can be found in the registry
   */
 class ServiceRegistryActor(etcd: Etcd, serviceName: String, port: Int) extends Actor {
+
   import context.dispatcher
 
-  // schedule a keep alive for 5 seconds
-  val tick: Cancellable = context.system.scheduler.schedule(5 seconds, 5 seconds, self, UpdateLease)
+  /**
+    * schedule a keep alive for 5 seconds
+    */
+    val tick: Cancellable = context.system.scheduler.schedule(5 seconds, 5 seconds, self, UpdateLease)
 
+  /**
+    * The lease if any is available for this actor
+    */
+  var lease: Option[Long] = None
+
+  /**
+    * The ip adress of this system so we can add it to the registry
+    */
+  val ip: String = InetAddress.getLocalHost.getHostAddress
+
+  /**
+    * Will send a keep alive to the etcd
+    */
   def updateLease(): Unit = {
     // update lease
+    lease match {
+      case None =>
+      case Some(leaseId) => etcd.lease.keepAlive(leaseId)
+    }
   }
 
   override def receive: Receive = {
@@ -29,6 +51,19 @@ class ServiceRegistryActor(etcd: Etcd, serviceName: String, port: Int) extends A
 
   override def preStart(): Unit = {
     // insert key, add lease for 10 seconds
+    etcd.lease.grant(10) map { resp =>
+      lease = Some(resp.iD)
+      // add key with lease
+
+      Await.result(
+        etcd.kv.putString(
+          key = s"akka-etcd-discovery.$serviceName.${resp.iD}",
+          value = s"$ip:$port",
+          lease = resp.iD
+        ),
+        3 seconds
+      )
+    }
   }
 
   override def postStop(): Unit = {
@@ -39,7 +74,11 @@ class ServiceRegistryActor(etcd: Etcd, serviceName: String, port: Int) extends A
 
 object ServiceRegistryActor {
 
-  sealed private case class UpdateLease() // used to update the lease of the registration
+  sealed private case class UpdateLease()
 
-  def props(etcd: Etcd, service: String, port: Int) = Props { new ServiceRegistryActor(etcd, service, port) }
+  // used to update the lease of the registration
+
+  def props(etcd: Etcd, service: String, port: Int) = Props {
+    new ServiceRegistryActor(etcd, service, port)
+  }
 }
