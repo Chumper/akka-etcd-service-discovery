@@ -3,6 +3,7 @@ package com.github.chumper.registry
 import akka.actor.{ActorRef, ActorSystem}
 import com.github.chumper.actor.ServiceRegistryActor
 import com.github.chumper.etcd.Etcd
+import io.grpc.stub.AbstractStub
 
 /**
   * Trait that offers methods to register the service under a given name, internally ot will also create an actor for
@@ -12,9 +13,9 @@ class EtcdRegistry(address: String = "localhost", port: Int = 2379)(implicit act
 
   val etcd = Etcd(address, port)
 
-  def register(serviceName: String, port: Int): ActorRef = {
+  def register(stub: AbstractStub[Any], port: Int): ActorRef = {
     // start actor and return an actor ref to interact with
-    actorSystem.actorOf(ServiceRegistryActor.props(etcd, serviceName, port), s"$serviceName-discovery-actor")
+    actorSystem.actorOf(ServiceRegistryActor.props(etcd, stub, port), s"${}-discovery-actor")
   }
 }
 
