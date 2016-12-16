@@ -3,8 +3,6 @@ package com.github.chumper.registry
 import akka.actor.{ActorRef, ActorSystem}
 import com.github.chumper.actor.ServiceRegistryActor
 import com.github.chumper.etcd.Etcd
-import com.trueaccord.scalapb.grpc.{AbstractService, ServiceCompanion}
-import io.grpc.stub.AbstractStub
 
 /**
   * Trait that offers methods to register the service under a given name, internally ot will also create an actor for

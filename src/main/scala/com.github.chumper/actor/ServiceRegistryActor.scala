@@ -5,13 +5,14 @@ import java.net.InetAddress
 import akka.actor.{Actor, Cancellable, Props}
 import com.github.chumper.actor.ServiceRegistryActor.UpdateLease
 import com.github.chumper.etcd.Etcd
+import com.typesafe.scalalogging.Logger
 
 import scala.concurrent.Await
 import scala.concurrent.duration.DurationDouble
 import scala.language.postfixOps
 
 /**
-  * Will hold a up to date list of requested services if they can be found in the registry
+  * Will insert a given service into the registry and will keep it alive as long as the actor lives
   */
 class ServiceRegistryActor(etcd: Etcd, serviceName: String, port: Int) extends Actor {
 
@@ -33,13 +34,21 @@ class ServiceRegistryActor(etcd: Etcd, serviceName: String, port: Int) extends A
   val ip: String = InetAddress.getLocalHost.getHostAddress
 
   /**
+    * log instance
+    */
+  val logger: Logger = Logger[ServiceRegistryActor]
+
+  /**
     * Will send a keep alive to the etcd
     */
   def updateLease(): Unit = {
     // update lease
     lease match {
       case None =>
-      case Some(leaseId) => etcd.lease.keepAlive(leaseId)
+      case Some(leaseId) => {
+        etcd.lease.keepAlive(leaseId)
+        logger.info(s"Renewed lease ($leaseId) for $serviceName")
+      }
     }
   }
 
