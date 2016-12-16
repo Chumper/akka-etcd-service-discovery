@@ -21,7 +21,7 @@ class ServiceRegistryActor(etcd: Etcd, serviceName: String, port: Int) extends A
   /**
     * schedule a keep alive for 5 seconds
     */
-    val tick: Cancellable = context.system.scheduler.schedule(5 seconds, 5 seconds, self, UpdateLease)
+  val tick: Cancellable = context.system.scheduler.schedule(5 seconds, 5 seconds, self, UpdateLease)
 
   /**
     * The lease if any is available for this actor
@@ -58,9 +58,11 @@ class ServiceRegistryActor(etcd: Etcd, serviceName: String, port: Int) extends A
     case _ =>
   }
 
+  @throws(classOf[Exception])
   override def preStart(): Unit = {
     // insert key, add lease for 10 seconds
-    etcd.lease.grant(10) map { resp =>
+    Await.result(etcd.lease.grant(10) map { resp =>
+      logger.info(s"Granted lease (${resp.iD}) for $serviceName")
       lease = Some(resp.iD)
       // add key with lease
 
@@ -72,12 +74,26 @@ class ServiceRegistryActor(etcd: Etcd, serviceName: String, port: Int) extends A
         ),
         3 seconds
       )
-    }
+    },
+      3 seconds
+    )
+    val i = 0
   }
 
+  @throws(classOf[Exception])
   override def postStop(): Unit = {
     // cancel periodic scheduling
     tick.cancel()
+    lease match {
+      case None =>
+      case Some(leaseId) =>
+        Await.result(etcd.lease.revoke(leaseId) map { resp =>
+          logger.info(s"Revoked lease ($leaseId) for $serviceName")
+        },
+          3 seconds
+        )
+    }
+    val i = 0
   }
 }
 
