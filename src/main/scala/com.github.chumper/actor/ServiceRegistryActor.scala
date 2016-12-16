@@ -3,6 +3,8 @@ package com.github.chumper.actor
 import akka.actor.{Actor, Cancellable, Props}
 import com.github.chumper.actor.ServiceRegistryActor.UpdateLease
 import com.github.chumper.etcd.Etcd
+import com.trueaccord.scalapb.grpc.{AbstractService, ServiceCompanion}
+import io.grpc.stub.AbstractStub
 
 import scala.concurrent.duration.DurationDouble
 
@@ -39,5 +41,5 @@ object ServiceRegistryActor {
 
   sealed private case class UpdateLease() // used to update the lease of the registration
 
-  def props(etcd: Etcd, serviceName: String, port: Int) = Props { new ServiceRegistryActor(etcd, serviceName, port) }
+  def props(etcd: Etcd, service: String, port: Int) = Props { new ServiceRegistryActor(etcd, service, port) }
 }

@@ -3,6 +3,7 @@ package com.github.chumper.registry
 import akka.actor.{ActorRef, ActorSystem}
 import com.github.chumper.actor.ServiceRegistryActor
 import com.github.chumper.etcd.Etcd
+import com.trueaccord.scalapb.grpc.{AbstractService, ServiceCompanion}
 import io.grpc.stub.AbstractStub
 
 /**
@@ -13,9 +14,9 @@ class EtcdRegistry(address: String = "localhost", port: Int = 2379)(implicit act
 
   val etcd = Etcd(address, port)
 
-  def register(stub: AbstractStub[Any], port: Int): ActorRef = {
+  def register(service: String, port: Int): ActorRef = {
     // start actor and return an actor ref to interact with
-    actorSystem.actorOf(ServiceRegistryActor.props(etcd, stub, port), s"${}-discovery-actor")
+    actorSystem.actorOf(ServiceRegistryActor.props(etcd, service, port), s"$service-discovery-actor")
   }
 }
 
