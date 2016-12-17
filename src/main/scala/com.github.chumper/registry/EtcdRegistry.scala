@@ -19,5 +19,11 @@ class EtcdRegistry(address: String = "localhost", port: Int = 2379)(implicit act
 }
 
 object EtcdRegistry {
+
+  /**
+    * Implicit value if there is no actorSystem in the scope
+    */
+  implicit val actorSystem: ActorSystem = ActorSystem.create("EtcdRegistry")
+
   def apply(address: String = "localhost", port: Int = 2379)(implicit actorSystem: ActorSystem): EtcdRegistry = new EtcdRegistry(address, port)
 }
