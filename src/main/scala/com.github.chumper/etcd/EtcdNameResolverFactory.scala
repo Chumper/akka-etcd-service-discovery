@@ -2,19 +2,23 @@ package com.github.chumper.etcd
 
 import java.net.URI
 
-import etcdserverpb.rpc
+import akka.actor.ActorSystem
 import io.grpc.{Attributes, NameResolver}
 
 import scala.language.postfixOps
 
 /**
-  * Factory that will resolve the
+  * Factory that will resolve the EtcdNameResolver
   */
-class EtcdNameResolverFactory extends NameResolver.Factory {
+class EtcdNameResolverFactory(etcd: Etcd)(implicit val actorSystem: ActorSystem) extends NameResolver.Factory {
 
   override def newNameResolver(uri: URI, params: Attributes): NameResolver = {
-    null
+    EtcdNameResolver(uri.getAuthority)(actorSystem, etcd)
   }
 
   override def getDefaultScheme: String = "etcd"
+}
+
+object EtcdNameResolverFactory {
+  implicit val actorSystem: ActorSystem = ActorSystem.create("EtcdRegistry")
 }

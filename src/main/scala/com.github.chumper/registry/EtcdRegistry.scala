@@ -21,6 +21,11 @@ class EtcdRegistry(address: String = "localhost", port: Int = 2379)(implicit act
 object EtcdRegistry {
 
   /**
+    * The prefix for the service keys
+    */
+  val PREFIX: String = "akka-etcd-discovery."
+
+  /**
     * Implicit value if there is no actorSystem in the scope
     */
   implicit val actorSystem: ActorSystem = ActorSystem.create("EtcdRegistry")

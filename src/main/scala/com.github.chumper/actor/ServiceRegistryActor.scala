@@ -5,6 +5,7 @@ import java.net.InetAddress
 import akka.actor.{Actor, Cancellable, Props}
 import com.github.chumper.actor.ServiceRegistryActor.UpdateLease
 import com.github.chumper.etcd.Etcd
+import com.github.chumper.registry.EtcdRegistry
 import com.typesafe.scalalogging.Logger
 
 import scala.concurrent.Await
@@ -68,7 +69,7 @@ class ServiceRegistryActor(etcd: Etcd, serviceName: String, port: Int) extends A
 
       Await.result(
         etcd.kv.putString(
-          key = s"akka-etcd-discovery.$serviceName.${resp.iD}",
+          key = s"${EtcdRegistry.PREFIX}$serviceName.${resp.iD}",
           value = s"$ip:$port",
           lease = resp.iD
         ),
