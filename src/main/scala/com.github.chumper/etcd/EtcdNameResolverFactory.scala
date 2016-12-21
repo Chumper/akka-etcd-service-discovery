@@ -18,7 +18,3 @@ class EtcdNameResolverFactory(etcd: Etcd)(implicit val actorSystem: ActorSystem)
 
   override def getDefaultScheme: String = "etcd"
 }
-
-object EtcdNameResolverFactory {
-  implicit val actorSystem: ActorSystem = ActorSystem.create("EtcdRegistry")
-}
