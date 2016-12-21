@@ -30,7 +30,9 @@ class EtcdNameResolver(serviceName: String)(implicit actorSystem: ActorSystem, e
 
     def getServers = etcd.kv.prefix(s"${EtcdRegistry.PREFIX}$serviceName").map { resp =>
       // generate service list
-      val addresses = resp.kvs.map { _.value.toStringUtf8 }
+      val addresses = resp.kvs.map {
+        _.value.toStringUtf8
+      }
       val addresses2 = addresses.map { e =>
         val ad = e.split(":")
         new ResolvedServerInfo(new InetSocketAddress(ad(0), ad(1).toInt), Attributes.EMPTY)
