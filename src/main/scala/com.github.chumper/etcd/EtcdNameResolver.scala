@@ -28,16 +28,19 @@ class EtcdNameResolver(serviceName: String)(implicit actorSystem: ActorSystem, e
 
   override def start(listener: Listener): Unit = {
 
-    def getServers = etcd.kv.prefix(s"${EtcdRegistry.PREFIX}$serviceName").map { resp =>
-      // generate service list
-      val addresses = resp.kvs.map {
-        _.value.toStringUtf8
+    def getServers = {
+      etcd.kv.prefix(s"${EtcdRegistry.PREFIX}$serviceName").map { resp =>
+        // generate service list
+        val addresses = resp.kvs.map {
+          _.value.toStringUtf8
+        }
+        val addresses2 = addresses.map { e =>
+          val ad = e.split(":")
+          new ResolvedServerInfo(new InetSocketAddress(ad(0), ad(1).toInt), Attributes.EMPTY)
+        }
+        println(addresses2)
+        listener.onUpdate(Collections.singletonList(addresses2.asJava), Attributes.EMPTY)
       }
-      val addresses2 = addresses.map { e =>
-        val ad = e.split(":")
-        new ResolvedServerInfo(new InetSocketAddress(ad(0), ad(1).toInt), Attributes.EMPTY)
-      }
-      listener.onUpdate(Collections.singletonList(addresses2.asJava), Attributes.EMPTY)
     }
 
     // watch the keys
