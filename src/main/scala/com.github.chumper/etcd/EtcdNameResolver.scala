@@ -37,13 +37,8 @@ class EtcdNameResolver(serviceName: String)(implicit actorSystem: ActorSystem, e
         val ad = e.split(":")
         new ResolvedServerInfo(new InetSocketAddress(ad(0), ad(1).toInt), Attributes.EMPTY)
       }
-      println(addresses)
-      println(addresses2)
       listener.onUpdate(Collections.singletonList(addresses2.asJava), Attributes.EMPTY)
     }
-
-    // get the keys
-    getServers
 
     // watch the keys
     etcd.watch.prefix(s"${EtcdRegistry.PREFIX}$serviceName") { resp =>
