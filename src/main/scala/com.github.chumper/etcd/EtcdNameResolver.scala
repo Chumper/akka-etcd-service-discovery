@@ -34,6 +34,7 @@ class EtcdNameResolver(serviceName: String)(implicit actorSystem: ActorSystem, e
         val ad = e.split(":")
         new ResolvedServerInfo(new InetSocketAddress(ad(0), ad(1).asInstanceOf[Int]), Attributes.EMPTY)
       }
+      println(addresses)
       listener.onUpdate(Collections.singletonList(addresses.asJava), Attributes.EMPTY)
     }
 
