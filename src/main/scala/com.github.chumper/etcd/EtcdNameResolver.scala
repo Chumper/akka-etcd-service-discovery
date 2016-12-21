@@ -7,6 +7,7 @@ import akka.actor.ActorSystem
 import com.github.chumper.registry.EtcdRegistry
 import io.grpc.{Attributes, NameResolver, ResolvedServerInfo}
 import io.grpc.NameResolver.Listener
+import scala.concurrent.ExecutionContext.Implicits.global
 
 import scala.collection.JavaConverters.seqAsJavaListConverter
 

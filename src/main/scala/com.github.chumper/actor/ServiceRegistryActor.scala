@@ -47,8 +47,9 @@ class ServiceRegistryActor(etcd: Etcd, serviceName: String, port: Int) extends A
     lease match {
       case None =>
       case Some(leaseId) => {
-        etcd.lease.keepAlive(leaseId)
-        logger.info(s"Renewed lease ($leaseId) for $serviceName")
+        etcd.lease.keepAlive(leaseId).map { resp =>
+          logger.info(s"Renewed lease ($leaseId) for $serviceName")
+        }
       }
     }
   }
