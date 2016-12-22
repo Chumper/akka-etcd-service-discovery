@@ -17,7 +17,12 @@ class EtcdRegistry(address: String = "localhost", port: Int = 2379)(implicit act
 
   val etcd = Etcd(address, port)
 
-  def register(service: String, port: Int, address: String = ip()): ActorRef = {
+  def register(service: String, port: Int): ActorRef = {
+    // start actor and return an actor ref to interact with
+    actorSystem.actorOf(ServiceRegistryActor.props(etcd, service, ip(), port), s"$service-discovery-actor-${UUID.randomUUID().toString}")
+  }
+
+  def register(service: String, address: String, port: Int): ActorRef = {
     // start actor and return an actor ref to interact with
     actorSystem.actorOf(ServiceRegistryActor.props(etcd, service, address, port), s"$service-discovery-actor-${UUID.randomUUID().toString}")
   }
