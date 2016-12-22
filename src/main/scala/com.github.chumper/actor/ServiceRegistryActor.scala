@@ -1,6 +1,6 @@
 package com.github.chumper.actor
 
-import java.net.InetAddress
+import java.net.{InetAddress, NetworkInterface}
 
 import akka.actor.{Actor, Cancellable, Props}
 import com.github.chumper.actor.ServiceRegistryActor.UpdateLease
@@ -8,6 +8,7 @@ import com.github.chumper.etcd.Etcd
 import com.github.chumper.registry.EtcdRegistry
 import com.typesafe.scalalogging.Logger
 
+import scala.collection.JavaConverters.enumerationAsScalaIteratorConverter
 import scala.concurrent.Await
 import scala.concurrent.duration.DurationDouble
 import scala.language.postfixOps
@@ -32,7 +33,21 @@ class ServiceRegistryActor(etcd: Etcd, serviceName: String, port: Int) extends A
   /**
     * The ip adress of this system so we can add it to the registry
     */
-  val ip: String = InetAddress.getLocalHost.getHostAddress
+  val ip: String = {
+
+    val enumeration = NetworkInterface.getNetworkInterfaces.asScala.toSeq
+
+    val ipAddresses = enumeration.flatMap(p =>
+      p.getInetAddresses.asScala.toSeq
+    )
+
+    val address = ipAddresses.find { address =>
+      val host = address.getHostAddress
+      host.contains(".") && !address.isLoopbackAddress
+    }.getOrElse(InetAddress.getLocalHost)
+
+    address.getHostAddress
+  }
 
   /**
     * log instance
