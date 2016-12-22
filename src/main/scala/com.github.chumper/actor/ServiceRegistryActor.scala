@@ -1,14 +1,11 @@
 package com.github.chumper.actor
 
-import java.net.{InetAddress, NetworkInterface}
-
 import akka.actor.{Actor, Cancellable, Props}
 import com.github.chumper.actor.ServiceRegistryActor.UpdateLease
 import com.github.chumper.etcd.Etcd
 import com.github.chumper.registry.EtcdRegistry
 import com.typesafe.scalalogging.Logger
 
-import scala.collection.JavaConverters.enumerationAsScalaIteratorConverter
 import scala.concurrent.Await
 import scala.concurrent.duration.DurationDouble
 import scala.language.postfixOps
