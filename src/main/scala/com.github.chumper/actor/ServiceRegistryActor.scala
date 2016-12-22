@@ -16,7 +16,7 @@ import scala.language.postfixOps
 /**
   * Will insert a given service into the registry and will keep it alive as long as the actor lives
   */
-class ServiceRegistryActor(etcd: Etcd, serviceName: String, port: Int) extends Actor {
+class ServiceRegistryActor(etcd: Etcd, serviceName: String, address: String, port: Int) extends Actor {
 
   import context.dispatcher
 
@@ -29,25 +29,6 @@ class ServiceRegistryActor(etcd: Etcd, serviceName: String, port: Int) extends A
     * The lease if any is available for this actor
     */
   var lease: Option[Long] = None
-
-  /**
-    * The ip adress of this system so we can add it to the registry
-    */
-  val ip: String = {
-
-    val enumeration = NetworkInterface.getNetworkInterfaces.asScala.toSeq
-
-    val ipAddresses = enumeration.flatMap(p =>
-      p.getInetAddresses.asScala.toSeq
-    )
-
-    val address = ipAddresses.find { address =>
-      val host = address.getHostAddress
-      host.contains(".") && !address.isLoopbackAddress
-    }.getOrElse(InetAddress.getLocalHost)
-
-    address.getHostAddress
-  }
 
   /**
     * log instance
@@ -86,7 +67,7 @@ class ServiceRegistryActor(etcd: Etcd, serviceName: String, port: Int) extends A
       Await.result(
         etcd.kv.putString(
           key = s"${EtcdRegistry.PREFIX}$serviceName.${resp.iD}",
-          value = s"$ip:$port",
+          value = s"$address:$port",
           lease = resp.iD
         ),
         3 seconds
@@ -94,7 +75,6 @@ class ServiceRegistryActor(etcd: Etcd, serviceName: String, port: Int) extends A
     },
       3 seconds
     )
-    val i = 0
   }
 
   @throws(classOf[Exception])
@@ -110,7 +90,6 @@ class ServiceRegistryActor(etcd: Etcd, serviceName: String, port: Int) extends A
           3 seconds
         )
     }
-    val i = 0
   }
 }
 
@@ -120,7 +99,7 @@ object ServiceRegistryActor {
 
   // used to update the lease of the registration
 
-  def props(etcd: Etcd, service: String, port: Int) = Props {
-    new ServiceRegistryActor(etcd, service, port)
+  def props(etcd: Etcd, service: String, address: String, port: Int) = Props {
+    new ServiceRegistryActor(etcd, service, address, port)
   }
 }
