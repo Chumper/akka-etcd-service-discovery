@@ -1,6 +1,6 @@
 package com.github.chumper.registry
 
-import java.net.{InetAddress, NetworkInterface}
+import java.net.{InetAddress, InetSocketAddress, NetworkInterface}
 import java.util.UUID
 
 import akka.actor.{ActorRef, ActorSystem}
@@ -60,7 +60,7 @@ class EtcdRegistry(etcd: Etcd)(implicit actorSystem: ActorSystem) {
     * @param serviceName the service name to watch on, acts as prefix
     * @param callback the callback that should be called when the services update
     */
-  def watch(serviceName: String)(callback: Seq[InetAddress] => Unit): Future[Watcher] = registryActor match {
+  def watch(serviceName: String)(callback: Seq[InetSocketAddress] => Unit): Future[Watcher] = registryActor match {
     case None => throw new RuntimeException("Registry was shutdown")
     case Some(ar) => (ar ? WatchService(serviceName, callback)).mapTo[Watcher]
   }

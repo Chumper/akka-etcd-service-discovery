@@ -54,11 +54,14 @@ class RegistryTest extends AsyncFunSuite with BeforeAndAfter with DockerTestKit 
 
   test("A service can be registered and a watcher will be updated") {
     val p = Promise[Assertion]
-    registry.watch("foo.bar.service") { servers =>
-      assert(servers.size === 1)
-      p.tryComplete(Try{assert(true)})
-    }
-    registry.register("foo.bar.service", 8080)
+    for {
+      r1 <- registry.watch("foo.bar.service") { servers =>
+        p.success(assert(servers.size === 1))
+      }
+      r2 <- registry.register("foo.bar.service.1234", 8080)
+      r3 <- r1.cancel()
+      r4 <- r2.cancel()
+    } yield true
     p.future
   }
 
