@@ -4,4 +4,4 @@ appender("Console-Appender", ConsoleAppender) {
     }
 }
 
-root(DEBUG, ["Console-Appender"])
+root(INFO, ["Console-Appender"])

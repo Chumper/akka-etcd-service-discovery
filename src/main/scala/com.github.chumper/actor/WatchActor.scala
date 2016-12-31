@@ -1,6 +1,6 @@
 package com.github.chumper.actor
 
-import java.net.{InetAddress, InetSocketAddress}
+import java.net.InetSocketAddress
 
 import akka.actor.{Actor, Props}
 import com.github.chumper.etcd.Etcd
@@ -18,18 +18,20 @@ class WatchActor(service: String, callback: Seq[InetSocketAddress] => Unit)(impl
 
   var addresses: Seq[InetSocketAddress] = Seq.empty
 
-  log.debug(s"Watching service $service")
+  log.info(s"Watching service $service")
 
   etcd.watch.prefix(service) { resp =>
     if (resp.created) {
-      log.debug(s"$service watch created")
+      log.info(s"$service watch created")
       getServices map { addresses => this.addresses = addresses }
-      callback.apply(this.addresses)
+      if(this.addresses.nonEmpty) {
+        callback.apply(this.addresses)
+      }
     } else if (resp.canceled) {
-      log.debug(s"$service watch canceled")
+      log.info(s"$service watch canceled")
       context.stop(self)
     } else {
-      log.debug(s"$service updated")
+      log.info(s"$service updated")
       resp.events.foreach { e =>
         e.`type` match {
           case mvccpb.kv.Event.EventType.PUT =>
