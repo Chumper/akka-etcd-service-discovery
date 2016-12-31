@@ -1,9 +1,8 @@
 package com.github.chumper.actor
 
-import java.net.InetAddress
+ import java.net.InetAddress
 
 import akka.actor.{Actor, Props}
-import com.github.chumper.etcd.Etcd
 
 /**
   * Responsible to watch on a given key and to represent the values as `InetAddress`
