@@ -9,7 +9,9 @@ import com.whisk.docker.scalatest.DockerTestKit
 import org.scalatest._
 import util.EtcdService
 
-import scala.concurrent.{ExecutionContext, Promise}
+import scala.concurrent.duration.DurationLong
+import scala.concurrent.{Await, ExecutionContext, Future, Promise}
+import scala.language.postfixOps
 import scala.util.Try
 
 /**
@@ -54,6 +56,7 @@ class RegistryTest extends AsyncFunSuite with BeforeAndAfter with DockerTestKit 
 
   test("A service can be registered and a watcher will be updated") {
     val p = Promise[Assertion]
+
     for {
       r1 <- registry.watch("foo.bar.service") { servers =>
         p.success(assert(servers.size === 1))

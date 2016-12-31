@@ -137,5 +137,5 @@ class Watcher(actorRef: ActorRef)(implicit actorSystem: ActorSystem) {
 }
 
 object Watcher {
-  def apply(actorRef: ActorRef)(implicit actorSystem: ActorSystem): Registration = new Registration(actorRef)
+  def apply(actorRef: ActorRef)(implicit actorSystem: ActorSystem): Watcher = new Watcher(actorRef)
 }
