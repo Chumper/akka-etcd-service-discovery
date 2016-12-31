@@ -6,15 +6,16 @@ import com.spotify.docker.client.DefaultDockerClient
 import com.whisk.docker.DockerFactory
 import com.whisk.docker.impl.spotify.SpotifyDockerFactory
 import com.whisk.docker.scalatest.DockerTestKit
-import org.scalatest.AsyncFunSuite
+import org.scalatest._
 import util.EtcdService
 
-import scala.concurrent.ExecutionContext
+import scala.concurrent.{ExecutionContext, Promise}
+import scala.util.Try
 
 /**
   * Will test if services can be registered as expected
   */
-class RegistryTest extends AsyncFunSuite with DockerTestKit with EtcdService {
+class RegistryTest extends AsyncFunSuite with BeforeAndAfter with DockerTestKit with EtcdService {
 
   /**
     * Implicit value if there is no actorSystem in the scope
@@ -23,22 +24,42 @@ class RegistryTest extends AsyncFunSuite with DockerTestKit with EtcdService {
 
   implicit val executor: ExecutionContext = ExecutionContext.fromExecutor(null)
 
-  test("A single service can be registered") {
-    val registry = EtcdRegistry(Etcd())
+  var registry: EtcdRegistry = _
 
-    val registration = registry.register("foobar.service", 8080)
-    assert(registration !== null)
+  before {
+    registry = EtcdRegistry(Etcd())
+  }
+
+  test("A single service can be registered") {
+    for {
+      r1 <- registry.register("foo.bar.service", 8080)
+    } yield assert(r1 !== null)
   }
 
   test("A single service can be registered and canceled") {
-    val registry = EtcdRegistry(Etcd())
+    for {
+      r1 <- registry.register("foo.bar.service", 8080)
+      r2 <- r1.cancel()
+    } yield assert(r2)
+  }
 
-    val registration = registry.register("foobar.service", 8080)
-    assert(registration !== null)
+  test("Two services can be registered and canceled") {
+    for {
+      r1 <- registry.register("foo.bar.service", 8080)
+      r2 <- registry.register("foo.bar.service", 8081)
+      r3 <- r1.cancel()
+      r4 <- r2.cancel()
+    } yield assert(r3 && r4)
+  }
 
-    registration.cancel() map { canceled =>
-      assert(canceled)
+  test("A service can be registered and a watcher will be updated") {
+    val p = Promise[Assertion]
+    registry.watch("foo.bar.service") { servers =>
+      assert(servers.size === 1)
+      p.tryComplete(Try{assert(true)})
     }
+    registry.register("foo.bar.service", 8080)
+    p.future
   }
 
   override implicit def dockerFactory: DockerFactory =

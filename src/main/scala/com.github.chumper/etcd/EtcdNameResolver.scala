@@ -18,7 +18,8 @@ class EtcdNameResolver(serviceName: String)(implicit actorSystem: ActorSystem, e
   override def shutdown(): Unit = {
     // stop watching the keys
     watchId match {
-      case Some(id) => etcd.watch.cancel(id)
+      case Some(id) =>
+        etcd.watch.cancel(id)
         watchId = None
       case None =>
     }

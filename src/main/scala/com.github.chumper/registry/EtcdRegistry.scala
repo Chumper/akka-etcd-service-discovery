@@ -1,14 +1,18 @@
 package com.github.chumper.registry
 
-import java.net.{DatagramSocket, InetAddress, NetworkInterface}
+import java.net.{InetAddress, NetworkInterface}
 import java.util.UUID
 
 import akka.actor.{ActorRef, ActorSystem}
 import akka.pattern
-import com.github.chumper.actor.ServiceRegistryActor
+import akka.pattern.ask
+import akka.util.Timeout
+import com.github.chumper.actor.RegistryActor
+import com.github.chumper.actor.RegistryActor.{RegisterService, WatchService}
 import com.github.chumper.etcd.Etcd
 
 import scala.collection.JavaConverters.enumerationAsScalaIteratorConverter
+import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 import scala.concurrent.duration.DurationDouble
 import scala.language.postfixOps
@@ -20,16 +24,22 @@ import scala.language.postfixOps
 class EtcdRegistry(etcd: Etcd)(implicit actorSystem: ActorSystem) {
 
   /**
+    * Main actor for all registrations, can be used to cancel all registrations and also has a custom supervisor
+    * strategy for all child actors
+    */
+  var registryActor: Option[ActorRef] = Some(actorSystem.actorOf(RegistryActor.props()(etcd, actorSystem), s"registry-${UUID.randomUUID().toString}"))
+
+  implicit val timeout = Timeout(5 seconds)
+
+  /**
     * Will register the current network address and the given port with the service name
     * @param service the name of the service that the address should be registered under
     * @param port the port of the service
     * @return a registration that can be canceled
     */
-
-  def register(service: String, port: Int): Registration = {
-    // start actor and return an actor ref to interact with
-    val ref = actorSystem.actorOf(ServiceRegistryActor.props(etcd, service, ip, port), s"$service-discovery-actor-${UUID.randomUUID().toString}")
-    Registration(ref)
+  def register(service: String, port: Int): Future[Registration] = registryActor match {
+    case None => throw new RuntimeException("Registry was shutdown")
+    case Some(ar) => (ar ? RegisterService(service, ip, port)).mapTo[Registration]
   }
 
   /**
@@ -39,33 +49,39 @@ class EtcdRegistry(etcd: Etcd)(implicit actorSystem: ActorSystem) {
     * @param port the port of the service
     * @return a registration that can be canceled
     */
-  def register(service: String, address: String, port: Int): Registration = {
-    // start actor and return an actor ref to interact with
-    val ref = actorSystem.actorOf(ServiceRegistryActor.props(etcd, service, address, port), s"$service-discovery-actor-${UUID.randomUUID().toString}")
-    Registration(ref)
-  }
-
-  /**
-    * get all services with the given name
-    * @param serviceName the name of the service, acts as prefix
-    * @return a list of addresses for the given service
-    */
-  def get(serviceName: String): Seq[InetAddress] = {
-    Seq()
+  def register(service: String, address: String, port: Int): Future[Registration] = registryActor match {
+    case None => throw new RuntimeException("Registry was shutdown")
+    case Some(ar) => (ar ? RegisterService(service, address, port)).mapTo[Registration]
   }
 
   /**
     * Will watch on the given prefix service name and call the given callback when the addresses change.
-    * The list is the currently up to date list with the service adresses
+    * The list is the currently up to date list with the service addresses
     * @param serviceName the service name to watch on, acts as prefix
     * @param callback the callback that should be called when the services update
     */
-  def watch(serviceName: String)(callback: Seq[InetAddress] => Unit): Unit = {
-
+  def watch(serviceName: String)(callback: Seq[InetAddress] => Unit): Future[Watcher] = registryActor match {
+    case None => throw new RuntimeException("Registry was shutdown")
+    case Some(ar) => (ar ? WatchService(serviceName, callback)).mapTo[Watcher]
   }
 
   /**
-    * The ip adress of this system so we can add it to the registry
+    * Will shutdown the registry which will result in all registrations to be canceled
+    * @return a future which will hold the value if the registry could be shutdown
+    */
+  def shutdown(): Future[Boolean] = registryActor match {
+    case Some(ar) => pattern.gracefulStop(ar, 10 seconds).map { shutdown =>
+      registryActor = None
+      shutdown
+    }
+    case None => Future { true }
+  }
+
+  def isShutdown: Boolean = registryActor.isEmpty
+
+  /**
+    * The ip address of this system which will be detected by iterating over the network interfaces and finding an
+    * interface that is not a loopbackAddress and has a valid hostname
     */
   private val ip = {
 
@@ -101,13 +117,25 @@ object EtcdRegistry {
   * @param actorSystem the system that spawned the service registration actor
   */
 class Registration(actorRef: ActorRef)(implicit actorSystem: ActorSystem) {
-  // will be returned to the caller so the caller can cancel the registration if needed
+  /**
+    * Will stop the actor associated with this registration and will remove the registration from the registry
+    * @return a future indicating if the removal was successful
+    */
   def cancel(): Future[Boolean] = {
-    // will stop the actor and therefore the registration
     pattern.gracefulStop(actorRef, 10 seconds)
   }
 }
 
 object Registration {
+  def apply(actorRef: ActorRef)(implicit actorSystem: ActorSystem): Registration = new Registration(actorRef)
+}
+
+class Watcher(actorRef: ActorRef)(implicit actorSystem: ActorSystem) {
+  def cancel(): Future[Boolean] = {
+    pattern.gracefulStop(actorRef, 10 seconds)
+  }
+}
+
+object Watcher {
   def apply(actorRef: ActorRef)(implicit actorSystem: ActorSystem): Registration = new Registration(actorRef)
 }

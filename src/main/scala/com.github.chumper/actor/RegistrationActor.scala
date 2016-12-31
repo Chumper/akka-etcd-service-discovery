@@ -1,7 +1,7 @@
 package com.github.chumper.actor
 
 import akka.actor.{Actor, Cancellable, Props}
-import com.github.chumper.actor.ServiceRegistryActor.UpdateLease
+import com.github.chumper.actor.RegistrationActor.UpdateLease
 import com.github.chumper.etcd.Etcd
 import com.github.chumper.registry.EtcdRegistry
 import com.typesafe.scalalogging.Logger
@@ -13,7 +13,7 @@ import scala.language.postfixOps
 /**
   * Will insert a given service into the registry and will keep it alive as long as the actor lives
   */
-class ServiceRegistryActor(etcd: Etcd, serviceName: String, address: String, port: Int) extends Actor {
+class RegistrationActor(etcd: Etcd, serviceName: String, address: String, port: Int) extends Actor {
 
   import context.dispatcher
 
@@ -30,7 +30,7 @@ class ServiceRegistryActor(etcd: Etcd, serviceName: String, address: String, por
   /**
     * log instance
     */
-  val logger: Logger = Logger[ServiceRegistryActor]
+  val logger: Logger = Logger[RegistrationActor]
 
   /**
     * Will send a keep alive to the etcd
@@ -90,13 +90,12 @@ class ServiceRegistryActor(etcd: Etcd, serviceName: String, address: String, por
   }
 }
 
-object ServiceRegistryActor {
+object RegistrationActor {
 
+  // used to keep alive the lease of the registration
   sealed private case class UpdateLease()
 
-  // used to update the lease of the registration
-
   def props(etcd: Etcd, service: String, address: String, port: Int) = Props {
-    new ServiceRegistryActor(etcd, service, address, port)
+    new RegistrationActor(etcd, service, address, port)
   }
 }
