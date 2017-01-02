@@ -55,6 +55,19 @@ class EtcdRegistry(etcd: Etcd)(implicit actorSystem: ActorSystem) {
   }
 
   /**
+    * Will get all services with the given prefix
+    * @param serviceName the service name to watch on, acts as prefix
+    */
+  def get(serviceName: String): Future[Seq[InetSocketAddress]] = {
+    etcd.kv.prefix(EtcdRegistry.PREFIX + serviceName) map { resp =>
+      resp.kvs.map { kv =>
+        val address = kv.value.toStringUtf8.split(":")
+        new InetSocketAddress(address(0), address(1).toInt)
+      }
+    }
+  }
+
+  /**
     * Will watch on the given prefix service name and call the given callback when the addresses change.
     * The list is the currently up to date list with the service addresses
     * @param serviceName the service name to watch on, acts as prefix
