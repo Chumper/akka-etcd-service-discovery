@@ -37,11 +37,9 @@ class EtcdNameResolver(serviceName: String)(implicit actorSystem: ActorSystem, e
         }
         val addresses2 = addresses.map { e =>
           val ad = e.split(":")
-          new ResolvedServerInfo(new InetSocketAddress(ad(0), ad(1).toInt), Attributes.EMPTY)
+          Collections.singletonList(new ResolvedServerInfo(new InetSocketAddress(ad(0), ad(1).toInt), Attributes.EMPTY))
         }
-        scala.util.Random.shuffle(addresses2)
-        println(addresses2)
-        listener.onUpdate(Collections.singletonList(addresses2.asJava), Attributes.EMPTY)
+        listener.onUpdate(addresses2.asJava, Attributes.EMPTY)
       }
     }
 
