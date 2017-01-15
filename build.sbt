@@ -9,7 +9,7 @@ libraryDependencies += "org.scalactic" %% "scalactic" % "3.0.1"
 libraryDependencies += "org.scalatest" %% "scalatest" % "3.0.1" % "test"
 
 libraryDependencies += "com.typesafe.akka" %% "akka-actor" % "2.4.14"
-libraryDependencies += "com.github.Chumper" % "etcd3-scala" % "master-SNAPSHOT"
+libraryDependencies += "com.github.Chumper" % "etcd3-scala" % "0.1.1"
 
 libraryDependencies += "ch.qos.logback" % "logback-classic" % "1.1.8"
 libraryDependencies += "com.typesafe.scala-logging" %% "scala-logging" % "3.5.0"
