@@ -118,7 +118,7 @@ object EtcdRegistry {
   /**
     * The prefix for the service keys
     */
-  val PREFIX: String = "akka-etcd-discovery."
+  val PREFIX: String = "service-registry."
 
   def apply(etcd: Etcd)(implicit actorSystem: ActorSystem): EtcdRegistry = new EtcdRegistry(etcd)
 }
